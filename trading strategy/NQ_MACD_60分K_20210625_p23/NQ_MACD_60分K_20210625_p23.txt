@@ -1,0 +1,47 @@
+input: FastLength(50), SlowLength(162), low_len(20), high_len(38), low_len_short(16), high_len_short(10);  
+input: MACDLength(144);
+input: threshold(0.56); //, threshold_short(0);
+value1 = MACD(close + truerange, FastLength, SlowLength); 
+value2 = XAverage( value1, MACDLength ) ;
+value3 = value1 - value2;
+
+//====== enter strategy================
+
+if  marketposition <= 0 then begin
+	if value1[1] = Lowest(value1, low_len) and value1 > value1[1]  then buy("buy") next bar market;
+	if value3 cross over threshold then buy("cross buy") next bar market;
+end;
+
+if  marketposition = 0 then begin
+	if value1[1] = Highest(value1, high_len_short) and value1 < value1[1] then sellshort("sellshort") next bar market;
+end;
+
+
+//====== exit strategy=================
+if marketposition > 0 then begin
+	if value1[1] = Highest(value1, high_len) and value1 < value1[1] then sell("sell") next bar market;
+	if close[6] > close[5] and close[5] > close[4] and close[4] > close[3] and close[3] > close[2] and close[2] > close[1] and close[1] > close then sell("decline sell") next bar market;
+	if barssinceentry > 163 then sell("time sell") next bar market;
+end;
+
+if marketposition < 0 then begin
+	if value1[1] = Lowest(value1, low_len_short) and value1 > value1[1] then buytocover("buytocover") next bar market;
+end;
+
+
+
+//---% trailing take profit and stop loss---
+//0.1-0.9(0.05), 0.5-5(0.05)
+
+input: ProfitThres(2.8), returnPercent(0.1), returnPercent_short(0.15);
+variable: maxProfit(0);
+
+maxProfit = iff(currentcontracts <> 0, maxpositionprofit/(bigpointvalue*currentcontracts), 0);
+
+if marketposition > 0 then begin
+	if maxProfit/entryprice >= ProfitThres/100 then sell("bReturn") next bar at entryprice + maxProfit*(1-returnPercent) stop; 
+end;
+
+if marketposition < 0 then begin
+	if maxProfit/entryprice >= ProfitThres/100 then buytocover("sReturn") next bar at entryprice - maxProfit*(1-returnPercent_short) stop; 
+end;

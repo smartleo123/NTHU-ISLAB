@@ -1,0 +1,41 @@
+input: up(52),down(39),highlen(1),lowlen(11);  
+vars:Q(0),diff(0); 
+
+Q = volume of data2; //the percentage of the difference between long and short 
+diff = close of data2; // the difference between long and short
+
+// ==========enter strategy==========
+if marketposition = 0 then begin
+	if Q > up then buy next bar market;
+end;	
+
+//==========exit strategy=============
+if marketposition > 0 then begin
+	if diff = Lowest(diff,lowlen) then sell next bar market;
+end;
+
+
+//=========stop loss and take profit method===========
+
+
+//===========fixloss===========
+input:fixloss(200);
+If marketposition > 0 then begin
+     Sell("FX LX") next bar at entryprice - fixloss Stop;
+end;
+
+//=============HL take profit===============
+input:HLLongLen(25),HLShortlen(20);
+variable:HL1(0);
+
+HL1 = (highest(high, HLLongLen) + Lowest(low, HLShortLen))/2;
+if marketposition > 0 and close > HL1 then begin
+    sell("HL LX") next bar at HL1 stop; 
+end;
+
+if _IsSettlementDay then setexitonclose;
+
+
+
+
+

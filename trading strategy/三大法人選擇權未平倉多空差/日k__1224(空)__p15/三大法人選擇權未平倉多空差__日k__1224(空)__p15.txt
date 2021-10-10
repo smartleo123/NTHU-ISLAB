@@ -1,0 +1,43 @@
+input: percent_down(0.3),percent_up(0.7),rolling_days_up(20),rolling_days_down(20),highlen(0),lowlen(0);
+vars:up(0),down(0), diff(0); 
+
+up = Percentile(percent_up, close of data2, rolling_days_up);         
+down = Percentile(percent_down, close of data2, rolling_days_down);
+diff = close of data2; // the difference between long and short
+
+
+
+//==============enter strategy================
+if marketposition = 0 then begin
+	if diff < down and diff = Lowest(diff,lowlen) then sellshort next bar market;
+end;
+
+//==============exit strategy=================
+if marketposition < 0 then begin
+	if  diff > up or diff = Highest(diff,highlen) then buytocover next bar market;
+end;
+
+//=============stop loss and take profit method================
+
+//=============fixloss===============
+input:fixloss(75);
+if marketposition < 0 then begin
+	buytocover("FX LX") next bar at entryprice + fixloss stop;
+end;
+
+//=============HL take profit========
+input: 
+    price(close), HLLongLen(50), HLShortLen(50); 
+variable:
+    HL2(0); 
+ 
+HL2 = (highest(high, HLShortLen)+Lowest(low, HLLongLen))/2;
+
+if MarketPosition < 0 and price < HL2 then begin
+    buytocover("HL SX") next bar at HL2 stop; 
+end;
+
+
+if _IsSettlementDay then begin
+ setexitonclose;
+end;

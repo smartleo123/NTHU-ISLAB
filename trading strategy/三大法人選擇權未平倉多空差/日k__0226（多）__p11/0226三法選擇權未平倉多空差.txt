@@ -1,0 +1,48 @@
+input: percent_down(0.3),percent_up(0.5),rolling_days_up(20),rolling_days_down(20),highlen(0),lowlen(0);
+vars:up(0),down(0), diff(0); 
+
+up = Percentile(percent_up, close of data2, rolling_days_up);         
+down = Percentile(percent_down, close of data2, rolling_days_down);
+diff = close of data2; // the difference between long and short
+
+//==============enter strategy================
+if marketposition = 0 then begin
+	if diff > up then buy next bar at market;
+end;
+
+//==============exit strategy=================
+if marketposition > 0 then begin
+	if diff  = Lowest(diff,lowlen) then sell next bar at market;
+end;
+
+//=============stop loss and take profit method================
+
+//============ ATR stop ===============
+
+input: productvalue(1), len(5);
+	
+variable: loss(0);
+loss = AvgTrueRange(len) * productvalue;
+
+if marketposition > 0 then begin
+	if loss < 75 then loss = 75;
+	if loss > 250 then loss = 250;
+	sell ("ATR LX")next bar at entryprice-loss stop;
+end;
+
+
+//=============HL take profit========
+
+input: HLLongLen(50), HLShortLen(50); 
+variable: HL1(0); 
+ 
+HL1 = (highest(high, HLLongLen)+ Lowest(low, HLShortLen))/2;
+
+if MarketPosition > 0 and close > HL1 then begin
+	sell("HL LX") next bar at HL1 stop; 
+end;
+
+if _IsSettlementDay then begin
+ setexitonclose;
+end;
+
